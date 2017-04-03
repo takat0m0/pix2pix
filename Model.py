@@ -36,7 +36,7 @@ class Model(object):
                                       is_training = True)
         l1_loss = tf.reduce_mean(tf.reduce_sum(tf.abs(gen_figs - self.target_figs), [1, 2, 3]))
 
-        g_logits = self.disc.set_model(tf.concat(3, [gen_figs, self.target_figs]),
+        g_logits = self.disc.set_model(tf.concat([self.input_figs, gen_figs], 3),
                                        is_training = True)
         self.g_obj = -tf.reduce_mean(tf.reduce_sum(tf.log(1.0e-6 + tf.nn.sigmoid(g_logits))))
         self.g_obj += self.Lambda * l1_loss
@@ -44,11 +44,11 @@ class Model(object):
         self.train_gen  = tf.train.AdamOptimizer(self.lr, beta1 = 0.5).minimize(self.g_obj, var_list = self.gen.get_variables())
         
         # -- for sharing variables ---
-        tf.get_variable_scope().reuse_variables()
+        #tf.get_variable_scope().reuse_variables()
         
         # -- input + target -> disc --------
-        d_logits = self.disc.set_model(tf.concat(3, [self.input_figs, self.target_figs]),
-                                       is_training = True)
+        d_logits = self.disc.set_model(tf.concat([self.input_figs, self.target_figs], 3),
+                                       is_training = True, reuse = True)
         
         d_obj_true = -tf.reduce_mean(tf.reduce_sum(tf.log(1.0e-6 + tf.nn.sigmoid(d_logits))))
         d_obj_fake = -tf.reduce_mean(tf.reduce_sum(tf.log(1.0e-6 + 1 - tf.nn.sigmoid(g_logits))))
@@ -58,7 +58,7 @@ class Model(object):
 
         # -- for figure generation -------
         self.gen_figs = self.gen.set_model(self.input_figs,self.z, self.batch_size,
-                                           is_training = False)
+                                           is_training = False, reuse = True)
         
     def training_gen(self, sess, inputs, targets, z_list):
         _, g_obj = sess.run([self.train_gen, self.g_obj],

@@ -24,7 +24,7 @@ class Discriminator(object):
                 ret.append(var)
         return ret
     
-    def set_model(self, figs, is_training):
+    def set_model(self, figs, is_training, reuse = False):
 
         u'''
         return only logits. not sigmoid(logits).
@@ -33,7 +33,7 @@ class Discriminator(object):
         h = figs
         
         # convolution
-        with tf.variable_scope(self.name_scope_conv):
+        with tf.variable_scope(self.name_scope_conv, reuse = reuse):
             for i, out_dim in enumerate(self.out_dims):
                 conved = conv_layer(inputs = h,
                                     out_num = out_dim,
@@ -50,7 +50,7 @@ class Discriminator(object):
         # full connect
         dim = get_dim(h)
         h = tf.reshape(h, [-1, dim])
-        with tf.variable_scope(self.name_scope_fc):
+        with tf.variable_scope(self.name_scope_fc, reuse = reuse):
             h = linear_layer(h, dim, 1, 'fc')
             
         return h
@@ -59,4 +59,4 @@ if __name__ == u'__main__':
     g = Discriminator([64, 128, 256, 512])
     figs = tf.placeholder(tf.float32, [None, 256, 256, 3])
     t_figs = tf.placeholder(tf.float32, [None, 256, 256, 3])
-    g.set_model(tf.concat(3, [figs, t_figs]), True)
+    g.set_model(tf.concat([figs, t_figs], 3), True)

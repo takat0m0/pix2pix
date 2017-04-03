@@ -28,10 +28,10 @@ class Generator(object):
                 ret.append(var)
         return ret
     
-    def set_model(self, input_figs, z, batch_size, is_training):
+    def set_model(self, input_figs, z, batch_size, is_training, reuse = False):
         u'''
         # reshape z
-        with tf.variable_scope(self.name_scope_reshape):
+        with tf.variable_scope(self.name_scope_reshape, reuse = reuse):
             z_dim = z.get_shape().as_list()[1]
             h = linear_layer(z, z_dim, self.in_width * self.in_hight * self.in_chan, 'reshape')
             h = batch_norm(h, 'reshape', is_training)
@@ -40,13 +40,13 @@ class Generator(object):
             
         h = tf.reshape(h, [-1, self.in_width, self.in_hight, self.in_chan])
 
-        h = tf.concat(3, [input_figs, h])
+        h = tf.concat([input_figs, h], 3)
         '''
         h = input_figs
         encoded_list = []
         
         # encode
-        with tf.variable_scope(self.name_scope_encode):
+        with tf.variable_scope(self.name_scope_encode, reuse = reuse):
             for i, out_dim in enumerate(self.encode_out_dims):
                 h = conv_layer(h, out_dim, 4, 4, 2, i)
                 if i == 0:
@@ -60,7 +60,7 @@ class Generator(object):
         # deconvolution
         encoded_list.pop()
         h = tf.nn.relu(h)
-        with tf.variable_scope(self.name_scope_decode):
+        with tf.variable_scope(self.name_scope_decode, reuse = reuse):
             for i, out_dim in enumerate(self.decode_out_dims):
                 hight = 2 * h.get_shape().as_list()[1]
                 width = 2 * h.get_shape().as_list()[2]
@@ -72,7 +72,7 @@ class Generator(object):
                 #if is_training and i <= 2:
                 if i <= 2:
                     h = tf.nn.dropout(h, 0.5)
-                h = tf.concat(3, [h, encoded_list.pop()])
+                h = tf.concat([h, encoded_list.pop()], 3)
                 h = tf.nn.relu(h)
 
             hight = 2 * h.get_shape().as_list()[1]
